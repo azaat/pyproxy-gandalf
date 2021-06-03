@@ -38,9 +38,23 @@ class ProxyServer:
             socket.SOL_SOCKET,
             socket.SO_REUSEADDR,
             True)
+        self.listening_socket.setsockopt(
+            socket.SOL_SOCKET,
+            socket.SO_KEEPALIVE,
+            True)
+
         self.listening_socket.bind((HOST, PORT))
         self.listening_socket.listen(socket.SOMAXCONN)
 
+        # Trying to accept a connection
+        try:
+            self.listening_socket.settimeout(1)
+            self.listening_socket.accept()
+        except:
+            print(f'{bcolors.FAIL}Cannot accept connections, is port open?')
+            self.listening_socket.close()
+            exit()
+        self.listening_socket.settimeout(None)
         self.__clients = set()
 
     def __del__(self):
@@ -58,13 +72,7 @@ class ProxyServer:
                 args=(client_conn, client_addr)).start()
 
     def try_handle(self, client_conn, client_addr):
-        url = None
-        try:
-            self.handle(client_conn, client_addr)
-        except:
-            url_str = url.geturl() if url else None
-            print(url_str)
-            traceback.print_exc()
+        self.handle(client_conn, client_addr)
 
     def handle(self, client_conn, client_addr):
         request = client_conn.recv(self.buffer_length)
@@ -133,7 +141,7 @@ class ProxyServer:
                 break
             # Forward to target
             target.sendall(response)
-
+            # Use http parser lib to check message completeness
             recved = len(response)
             nparsed = p.execute(response, recved)
             assert nparsed == recved
