@@ -24,8 +24,6 @@ class bcolors:
 
 class ProxyServer:
     def __init__(self):
-        # Also acts as request length limit! browsers do it too
-        # https://stackoverflow.com/questions/2659952/maximum-length-of-http-get-request
         self.buffer_length = 8192
 
         # Create a TCP socket
@@ -106,6 +104,7 @@ class ProxyServer:
                                         args=(server_conn, client_conn, True))
                 temp.start()
                 server_conn.sendall(request)
+                self.forward(client_conn, server_conn)
             temp.join()
             client_conn.close()
 
