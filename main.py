@@ -11,9 +11,20 @@ HOST = "0.0.0.0"
 PORT = 6969
 BLOCKED_URLS = [
     "se.math.spbu.ru",
-    "tiktok.com"
+    "tiktok.com",
+    "hwproj.me"
 ]
 CONNECTION_ESTABLISHED = b'HTTP/1.1 200 Connection established\r\n\r\n'
+
+filtered_message = '''
+<html>
+<head>
+</head>
+<body>
+    <h1>Filtered...</h1>
+</body>
+</html>
+'''
 
 
 class bcolors:
@@ -81,40 +92,37 @@ class ProxyServer:
         method, address = self.parse_method_and_address(request)
         print(f'{bcolors.OKBLUE}Request to {address}..')
         hostname, _ = address
-        blocked_addr = False
         if hostname in BLOCKED_URLS:
             print(f'{bcolors.FAIL}------------------------')
             print(f'{bcolors.FAIL}Really? {hostname}?!')
             print(f'{bcolors.FAIL}YOU SHALL NOT PASS!!!!!')
             print(f'{bcolors.FAIL}------------------------')
-
-            blocked_addr = True
+            client_conn.close()
+            return
         with socket.create_connection(address) as server_conn:
             if method == 'CONNECT':
                 client_conn.sendall(CONNECTION_ESTABLISHED)
                 threading.Thread(
                     target=self.try_forward,
-                    args=(server_conn, client_conn, blocked_addr)).start()
+                    args=(server_conn, client_conn)).start()
 
             else:
                 threading.Thread(target=self.try_forward,
-                                 args=(server_conn, client_conn, blocked_addr)).start()
+                                 args=(server_conn, client_conn
+                                 )).start()
                 server_conn.sendall(request)
 
             self.forward(client_conn, server_conn)
 
-    def try_forward(self, source, target, blocked_addr=False):
+    def try_forward(self, source, target):
         try:
-            self.forward(source, target, blocked_addr)
+            self.forward(source, target)
         except:
             traceback.print_exc()
 
-    def forward(self, source, target, blocked_addr=False):
+    def forward(self, source, target):
         while True:
             # Receive data from source
-            if (blocked_addr):
-                target.sendall(b"KUKISH")
-                return
             response = source.recv(self.buffer_length)
             if not response:
                 break
