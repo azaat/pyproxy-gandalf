@@ -5,4 +5,7 @@
 
 ![shallnotpass](https://imgur.com/NZKxWoH.png)
 
-TODO: description, error handling (e.g. port unavailable)
+#### Usage
+
+1. Install ```requirements.txt```
+2. Launch ```python main.py```
